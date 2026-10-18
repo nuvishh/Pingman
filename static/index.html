@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pingman</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="logo">🏓 Pingman</div>
+  <div class="header-actions">
+    <button id="saveBtn" class="btn secondary" title="Save current request">💾 Save</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside id="sidebar">
+    <input id="search" type="text" placeholder="🔍 Search requests…">
+    <div class="side-section">
+      <div class="side-title">TAGS</div>
+      <div id="tagList" class="tag-list"></div>
+    </div>
+    <div class="side-tabs">
+      <button id="tabSaved" class="side-tab active">Saved</button>
+      <button id="tabHistory" class="side-tab">History</button>
+    </div>
+    <div id="savedPane" class="pane"></div>
+    <div id="historyPane" class="pane hidden">
+      <button id="clearHistory" class="btn danger small">Clear history</button>
+      <div id="historyList"></div>
+    </div>
+  </aside>
+
+  <main>
+    <section class="composer">
+      <select id="method">
+        <option>GET</option><option>POST</option><option>PUT</option>
+        <option>PATCH</option><option>DELETE</option>
+      </select>
+      <input id="url" type="text" placeholder="https://api.example.com/endpoint" spellcheck="false">
+      <button id="sendBtn" class="btn primary">Send ➤</button>
+    </section>
+
+    <section class="req-tabs">
+      <button class="req-tab active" data-tab="params">Params <span id="paramCount" class="count"></span></button>
+      <button class="req-tab" data-tab="headers">Headers <span id="headerCount" class="count"></span></button>
+      <button class="req-tab" data-tab="body">Body</button>
+    </section>
+
+    <section id="tab-params" class="req-pane">
+      <div class="hint">Query parameters — the URL updates as you type.</div>
+      <div id="paramRows"></div>
+      <button id="addParam" class="btn small">+ Add param</button>
+    </section>
+
+    <section id="tab-headers" class="req-pane hidden">
+      <div id="headerRows"></div>
+      <button id="addHeader" class="btn small">+ Add header</button>
+    </section>
+
+    <section id="tab-body" class="req-pane hidden">
+      <div class="body-bar">
+        <select id="bodyType">
+          <option value="json">JSON</option>
+          <option value="form">Form</option>
+          <option value="raw">Raw text</option>
+          <option value="none">None</option>
+        </select>
+        <span id="bodyHint" class="hint"></span>
+      </div>
+      <textarea id="body" rows="8" placeholder='{"key": "value"}' spellcheck="false"></textarea>
+    </section>
+
+    <section id="response" class="hidden">
+      <div class="resp-meta">
+        <span id="respStatus" class="status"></span>
+        <span id="respTime"></span>
+        <span id="respSize"></span>
+        <span id="respUrl" class="hint"></span>
+        <button id="copyResp" class="btn small">Copy</button>
+      </div>
+      <div class="resp-tabs">
+        <button class="resp-tab active" data-rtab="rbody">Body</button>
+        <button class="resp-tab" data-rtab="rheaders">Headers</button>
+      </div>
+      <pre id="respBody" class="resp-body"></pre>
+      <pre id="respHeaders" class="resp-body hidden"></pre>
+    </section>
+    <div id="error" class="error hidden"></div>
+  </main>
+</div>
+
+<div id="saveModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Save request</h3>
+    <label>Name<input id="saveName" type="text" placeholder="e.g. CampusMan withheld check"></label>
+    <label>Tags (comma separated)<input id="saveTags" type="text" placeholder="e.g. campusman, prod"></label>
+    <div class="modal-actions">
+      <button id="saveCancel" class="btn secondary">Cancel</button>
+      <button id="saveConfirm" class="btn primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="app.js"></script>
+</body>
+</html>
