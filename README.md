@@ -49,3 +49,12 @@ Set `PORT` env var as needed (defaults to 5000).
 ## Notes
 - Private/LAN targets (`localhost`, `10.x`, `192.168.x`…) are blocked from `/api/send` (SSRF guard).
 - History keeps the latest 200 entries.
+
+## Password protection
+
+Set the `APP_PASSWORD` environment variable to lock the app behind a login
+page (recommended for any public deployment — e.g. on Render: service →
+Environment → Add `APP_PASSWORD`). Without the variable the app runs open,
+which is fine for local use. Sessions last 30 days; use the Logout button
+in the header to sign out. Optionally also set `SECRET_KEY` to keep
+sessions valid across password changes.

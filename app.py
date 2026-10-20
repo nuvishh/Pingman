@@ -13,10 +13,100 @@ import time
 from urllib.parse import urlparse
 
 import requests
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 DB = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data.db"))
+
+# --- Password protection ---------------------------------------------------
+# Active only when the APP_PASSWORD environment variable is set (e.g. on
+# Render). Without it the app runs open, as before (local use). The password
+# itself never lives in the code or the repo — only in the server's env.
+import hashlib
+import hmac
+from datetime import timedelta
+
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
+app.secret_key = os.environ.get("SECRET_KEY") or (
+    hashlib.sha256(("pingman:" + APP_PASSWORD).encode()).hexdigest()
+    if APP_PASSWORD
+    else "pingman-local-dev"
+)
+app.permanent_session_lifetime = timedelta(days=30)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")),
+)
+
+_LOGIN_CSS = """
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;
+justify-content:center;background:#0b1220;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#e2e8f0}
+.card{background:#111c2e;border:1px solid #1e293b;border-radius:16px;padding:36px 32px;width:min(92vw,360px);
+box-shadow:0 20px 50px rgba(0,0,0,.5);text-align:center}
+.logo{font-size:28px;font-weight:700;margin-bottom:6px}
+.sub{color:#94a3b8;font-size:14px;margin-bottom:22px}
+input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e2e8f0;
+font-size:15px;outline:none}input:focus{border-color:#14b8a6}
+button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:#14b8a6;color:#04211d;
+font-size:15px;font-weight:600;cursor:pointer}button:hover{background:#2dd4bf}
+.err{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.4);
+padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:14px}
+"""
+
+
+def _login_page(error=""):
+    err = f'<div class="err">{error}</div>' if error else ""
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Pingman — Login</title>"
+        f"<style>{_LOGIN_CSS}</style></head><body>"
+        "<form class='card' method='post' action='/login'>"
+        "<div class='logo'>🏓 Pingman</div>"
+        "<div class='sub'>This Pingman is private.<br>Enter the password to continue.</div>"
+        f"{err}"
+        "<input type='password' name='password' placeholder='Password' autofocus required>"
+        "<button type='submit'>Unlock</button>"
+        "</form></body></html>"
+    )
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not APP_PASSWORD:
+        return redirect("/")
+    if session.get("authed"):
+        return redirect("/")
+    if request.method == "POST":
+        if hmac.compare_digest(request.form.get("password", ""), APP_PASSWORD):
+            session["authed"] = True
+            session.permanent = True
+            return redirect("/")
+        return _login_page("Wrong password — try again."), 401
+    return _login_page()
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login" if APP_PASSWORD else "/")
+
+
+@app.before_request
+def _auth_guard():
+    if not APP_PASSWORD:
+        return
+    if request.endpoint in ("login", "logout"):
+        return
+    if session.get("authed"):
+        return
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "login required"}), 401
+    return redirect("/login")
+
+
+# --- end password protection ------------------------------------------------
 
 HOP_BY_HOP = {
     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
