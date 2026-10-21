@@ -107,6 +107,8 @@ def _auth_guard():
         return
     if request.endpoint in ("login", "logout"):
         return
+    if request.path == "/logo.svg":
+        return  # public: the login page itself shows the logo + favicon
     if session.get("authed"):
         return
     if request.path.startswith("/api/"):
