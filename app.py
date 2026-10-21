@@ -46,8 +46,8 @@ background:radial-gradient(900px 480px at 85% -10%,rgba(245,158,11,.13),transpar
 font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .card{background:#141419;border:1px solid #33333f;border-radius:18px;padding:38px 32px;width:min(92vw,360px);
 box-shadow:0 24px 60px rgba(0,0,0,.55);text-align:center}
-.badge{width:52px;height:52px;margin:0 auto 14px;border-radius:14px;display:flex;align-items:center;justify-content:center;
-font-size:26px;background:linear-gradient(135deg,#fbbf24,#ea580c);box-shadow:0 6px 22px rgba(245,158,11,.35)}
+.badge-img{width:54px;height:54px;border-radius:15px;margin:0 auto 14px;display:block;
+box-shadow:0 6px 22px rgba(245,158,11,.35)}
 .logo{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
 .logo span{background:linear-gradient(90deg,#fbbf24,#fb923c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sub{color:#9a9aa5;font-size:14px;margin-bottom:22px;line-height:1.5}
@@ -67,9 +67,10 @@ def _login_page(error=""):
         "<!doctype html><html><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width,initial-scale=1'>"
         "<title>Pingman — Login</title>"
+        "<link rel='icon' type='image/svg+xml' href='/logo.svg'>"
         f"<style>{_LOGIN_CSS}</style></head><body>"
         "<form class='card' method='post' action='/login'>"
-        "<div class='badge'>🏓</div>"
+        "<img class='badge-img' src='/logo.svg' alt='Pingman logo'>"
         "<div class='logo'>Ping<span>man</span></div>"
         "<div class='sub'>This Pingman is private.<br>Enter the password to continue.</div>"
         f"{err}"

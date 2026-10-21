@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="rubber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ef4444"/>
+      <stop offset="1" stop-color="#b91c1c"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#bg)"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="1.5"/>
+  <!-- ping waves -->
+  <path d="M47.5 6.8a10.5 10.5 0 0 1 7.4 7.4" fill="none" stroke="#451a03" stroke-width="2.6" stroke-linecap="round" opacity=".55"/>
+  <path d="M47.5 12.4a6.6 6.6 0 0 1 4.7 4.7" fill="none" stroke="#451a03" stroke-width="2.6" stroke-linecap="round" opacity=".75"/>
+  <!-- ball -->
+  <circle cx="45" cy="19" r="5.4" fill="#fff7ed"/>
+  <circle cx="43.2" cy="17" r="1.7" fill="#ffffff"/>
+  <!-- paddle handle -->
+  <rect x="35.5" y="37" width="8" height="17" rx="3.4" transform="rotate(42 39.5 45.5)" fill="#451a03"/>
+  <!-- paddle blade -->
+  <circle cx="27.5" cy="28.5" r="16" fill="#200d02"/>
+  <circle cx="27.5" cy="28.5" r="12.6" fill="url(#rubber)"/>
+  <circle cx="23.4" cy="24.2" r="3.4" fill="#ffffff" opacity=".14"/>
+</svg>
