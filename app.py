@@ -41,16 +41,22 @@ app.config.update(
 
 _LOGIN_CSS = """
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;
-justify-content:center;background:#0b1220;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#e2e8f0}
-.card{background:#111c2e;border:1px solid #1e293b;border-radius:16px;padding:36px 32px;width:min(92vw,360px);
-box-shadow:0 20px 50px rgba(0,0,0,.5);text-align:center}
-.logo{font-size:28px;font-weight:700;margin-bottom:6px}
-.sub{color:#94a3b8;font-size:14px;margin-bottom:22px}
-input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e2e8f0;
-font-size:15px;outline:none}input:focus{border-color:#14b8a6}
-button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:#14b8a6;color:#04211d;
-font-size:15px;font-weight:600;cursor:pointer}button:hover{background:#2dd4bf}
-.err{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.4);
+justify-content:center;color:#f2f2f0;padding:16px;
+background:radial-gradient(900px 480px at 85% -10%,rgba(245,158,11,.13),transparent 60%),#0a0a0c;
+font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.card{background:#141419;border:1px solid #33333f;border-radius:18px;padding:38px 32px;width:min(92vw,360px);
+box-shadow:0 24px 60px rgba(0,0,0,.55);text-align:center}
+.badge{width:52px;height:52px;margin:0 auto 14px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+font-size:26px;background:linear-gradient(135deg,#fbbf24,#ea580c);box-shadow:0 6px 22px rgba(245,158,11,.35)}
+.logo{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.logo span{background:linear-gradient(90deg,#fbbf24,#fb923c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#9a9aa5;font-size:14px;margin-bottom:22px;line-height:1.5}
+input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #33333f;background:#0a0a0c;color:#f2f2f0;
+font-size:15px;outline:none}input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;cursor:pointer;
+background:linear-gradient(135deg,#f59e0b,#ea580c);color:#1a1005;font-size:15px;font-weight:700}
+button:hover{filter:brightness(1.08)}
+.err{background:rgba(248,113,113,.1);color:#fca5a5;border:1px solid rgba(248,113,113,.45);
 padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:14px}
 """
 
@@ -63,7 +69,8 @@ def _login_page(error=""):
         "<title>Pingman — Login</title>"
         f"<style>{_LOGIN_CSS}</style></head><body>"
         "<form class='card' method='post' action='/login'>"
-        "<div class='logo'>🏓 Pingman</div>"
+        "<div class='badge'>🏓</div>"
+        "<div class='logo'>Ping<span>man</span></div>"
         "<div class='sub'>This Pingman is private.<br>Enter the password to continue.</div>"
         f"{err}"
         "<input type='password' name='password' placeholder='Password' autofocus required>"

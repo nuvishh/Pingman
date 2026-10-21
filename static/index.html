@@ -4,11 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pingman</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 <header>
-  <div class="logo">🏓 Pingman</div>
+  <div class="brand">
+    <div class="logo-badge">🏓</div>
+    <div>
+      <div class="logo">Ping<span class="grad">man</span></div>
+      <div class="tagline">Your pocket API console — no CORS, no fuss.</div>
+    </div>
+  </div>
   <div class="header-actions">
     <button id="saveBtn" class="btn secondary" title="Save current request">💾 Save</button>
     <a href="/logout" class="btn secondary" title="Log out" style="text-decoration:none">🚪 Logout</a>
@@ -89,6 +95,7 @@
       <pre id="respHeaders" class="resp-body hidden"></pre>
     </section>
     <div id="error" class="error hidden"></div>
+    <div class="foot">Made with ♥ by <b>nuvish</b></div>
   </main>
 </div>
 
@@ -105,6 +112,6 @@
 </div>
 
 <div id="toast" class="toast hidden"></div>
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
