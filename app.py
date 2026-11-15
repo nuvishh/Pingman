@@ -1,8 +1,9 @@
 """Pingman — self-hostable API testing tool.
 
-Backend: Flask + SQLite. The server executes HTTP requests itself, so
+Backend: Flask + SQLite locally, or Turso (hosted) when TURSO_DATABASE_URL
++ TURSO_AUTH_TOKEN are set. The server executes HTTP requests itself, so
 CORS-blocked APIs work with no browser proxy needed. Saved requests,
-tags and history persist in data.db.
+tags and history persist in data.db (local) or the Turso database.
 
 Run locally:  pip install -r requirements.txt && python app.py
 """
@@ -22,20 +23,121 @@ DB = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data.db"
 # Local SQLite by default. When TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set
 # (e.g. on Render), use the hosted Turso database instead: Render's free tier
 # wipes local files on every restart, so local SQLite loses saved data.
-# The libsql client speaks SQLite: same SQL, same `?` placeholders.
-# NOTE: libsql connections have no `row_factory`, so reads go through
-# `_rows_as_dicts()` below instead of sqlite3.Row (works for both backends).
-try:
-    import libsql_experimental as libsql
-except ImportError:  # local dev without the libsql package installed
-    libsql = None
+# Turso is reached over its Hrana HTTP API (JSON), with the same SQL and the
+# same `?` placeholders as SQLite — no extra dependency beyond `requests`.
+# NOTE: reads go through `_rows_as_dicts()` below instead of sqlite3.Row,
+# because the Turso cursor has no `row_factory` (works for both backends).
+import base64
 
 TURSO_URL = os.environ.get("TURSO_DATABASE_URL", "")
 TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
-USE_TURSO = bool(TURSO_URL and TURSO_TOKEN and libsql is not None)
-if (TURSO_URL or TURSO_TOKEN) and libsql is None:
-    print("Pingman: WARNING: TURSO_* env set but libsql not installed;"
-          " falling back to local SQLite", flush=True)
+USE_TURSO = bool(TURSO_URL and TURSO_TOKEN)
+
+
+class _HranaCursor:
+    """Minimal sqlite3-cursor stand-in over one Hrana result."""
+
+    def __init__(self, cols, rows, lastrowid=None, rowcount=-1):
+        self.description = [
+            (c["name"], None, None, None, None, None, None) for c in cols
+        ]
+        self._rows = rows
+        self.lastrowid = lastrowid
+        self.rowcount = rowcount
+
+    def fetchall(self):
+        return self._rows
+
+    def fetchone(self):
+        return self._rows[0] if self._rows else None
+
+
+class _TursoConnection:
+    """Stateless Turso connection via the Hrana HTTP API (JSON).
+
+    Each `execute` is one pipeline request and auto-commits, so `commit()`
+    is a no-op; `close()` is a no-op too.
+    """
+
+    def __init__(self, url, token):
+        if url.startswith("libsql://"):
+            url = "https://" + url[len("libsql://"):]
+        self._endpoint = url.rstrip("/") + "/v2/pipeline"
+        self._token = token
+
+    def _pipeline(self, steps):
+        resp = requests.post(
+            self._endpoint,
+            headers={"Authorization": f"Bearer {self._token}"},
+            json={"requests": steps, "baton": None},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    @staticmethod
+    def _arg(value):
+        if value is None:
+            return {"type": "null"}
+        if isinstance(value, bool):
+            return {"type": "integer", "value": str(int(value))}
+        if isinstance(value, int):
+            return {"type": "integer", "value": str(value)}
+        if isinstance(value, float):
+            return {"type": "float", "value": value}
+        if isinstance(value, (bytes, bytearray)):
+            return {"type": "blob",
+                    "value": base64.b64encode(bytes(value)).decode()}
+        return {"type": "text", "value": str(value)}
+
+    @staticmethod
+    def _value(value):
+        kind = value.get("type")
+        if kind == "null":
+            return None
+        if kind == "integer":
+            return int(value["value"])
+        if kind == "float":
+            return float(value["value"])
+        if kind == "blob":
+            return base64.b64decode(value["value"])
+        return value.get("value")
+
+    def _run(self, steps):
+        data = self._pipeline(steps)
+        cursors = []
+        for res in data["results"]:
+            if res["type"] == "error":
+                raise RuntimeError(res["error"]["message"])
+            result = res["response"]["result"]
+            cols = result.get("cols") or []
+            rows = [[self._value(c) for c in row]
+                    for row in (result.get("rows") or [])]
+            lastrowid = result.get("last_insert_rowid")
+            cursors.append(_HranaCursor(
+                cols, rows,
+                int(lastrowid) if lastrowid is not None else None,
+                result.get("affected_row_count", -1)))
+        return cursors
+
+    def execute(self, sql, params=()):
+        step = {"type": "execute",
+                "stmt": {"sql": sql,
+                         "args": [self._arg(p) for p in params]}}
+        return self._run([step])[0]
+
+    def executescript(self, script):
+        steps = [{"type": "execute",
+                  "stmt": {"sql": s.strip(), "args": []}}
+                 for s in script.split(";") if s.strip()]
+        if steps:
+            self._run(steps)
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
 
 # --- Password protection ---------------------------------------------------
 # Active only when the APP_PASSWORD environment variable is set (e.g. on
@@ -154,7 +256,7 @@ def _rows_as_dicts(cur):
 
 def db():
     if USE_TURSO:
-        return libsql.connect(database=TURSO_URL, auth_token=TURSO_TOKEN)
+        return _TursoConnection(TURSO_URL, TURSO_TOKEN)
     return sqlite3.connect(DB)
 
 
