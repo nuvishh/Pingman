@@ -18,6 +18,25 @@ from flask import Flask, jsonify, redirect, request, send_from_directory, sessio
 app = Flask(__name__, static_folder="static", static_url_path="")
 DB = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data.db"))
 
+# --- Database backend -------------------------------------------------------
+# Local SQLite by default. When TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set
+# (e.g. on Render), use the hosted Turso database instead: Render's free tier
+# wipes local files on every restart, so local SQLite loses saved data.
+# The libsql client speaks SQLite: same SQL, same `?` placeholders.
+# NOTE: libsql connections have no `row_factory`, so reads go through
+# `_rows_as_dicts()` below instead of sqlite3.Row (works for both backends).
+try:
+    import libsql_experimental as libsql
+except ImportError:  # local dev without the libsql package installed
+    libsql = None
+
+TURSO_URL = os.environ.get("TURSO_DATABASE_URL", "")
+TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
+USE_TURSO = bool(TURSO_URL and TURSO_TOKEN and libsql is not None)
+if (TURSO_URL or TURSO_TOKEN) and libsql is None:
+    print("Pingman: WARNING: TURSO_* env set but libsql not installed;"
+          " falling back to local SQLite", flush=True)
+
 # --- Password protection ---------------------------------------------------
 # Active only when the APP_PASSWORD environment variable is set (e.g. on
 # Render). Without it the app runs open, as before (local use). The password
@@ -128,13 +147,20 @@ PRIVATE_RE = __import__("re").compile(
 )
 
 
+def _rows_as_dicts(cur):
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
 def db():
-    con = sqlite3.connect(DB)
-    con.row_factory = sqlite3.Row
-    return con
+    if USE_TURSO:
+        return libsql.connect(database=TURSO_URL, auth_token=TURSO_TOKEN)
+    return sqlite3.connect(DB)
 
 
 def init_db():
+    print(f"Pingman: database backend = {'Turso' if USE_TURSO else 'local SQLite'}",
+          flush=True)
     con = db()
     con.executescript(
         """
@@ -241,7 +267,7 @@ def list_requests():
     tag = request.args.get("tag")
     q = request.args.get("q", "").lower()
     con = db()
-    rows = con.execute("SELECT * FROM requests ORDER BY id DESC").fetchall()
+    rows = _rows_as_dicts(con.execute("SELECT * FROM requests ORDER BY id DESC"))
     con.close()
     out = []
     for r in rows:
@@ -309,8 +335,8 @@ def delete_request(rid):
 @app.route("/api/history", methods=["GET"])
 def list_history():
     con = db()
-    rows = con.execute(
-        "SELECT * FROM history ORDER BY id DESC LIMIT 100").fetchall()
+    rows = _rows_as_dicts(con.execute(
+        "SELECT * FROM history ORDER BY id DESC LIMIT 100"))
     con.close()
     return jsonify([dict(r) for r in rows])
 
@@ -327,7 +353,7 @@ def clear_history():
 @app.route("/api/tags", methods=["GET"])
 def list_tags():
     con = db()
-    rows = con.execute("SELECT tags FROM requests").fetchall()
+    rows = _rows_as_dicts(con.execute("SELECT tags FROM requests"))
     con.close()
     tags = {}
     for r in rows:
